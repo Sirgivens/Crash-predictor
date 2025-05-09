@@ -22,9 +22,21 @@
 
     function updateUI() {
       document.getElementById('history').innerHTML = `<strong>Last 10:</strong> ${crashData.join(', ')}`;
+      
       if (crashData.length === 10) {
-        let avg = crashData.reduce((a, b) => a + b, 0) / 10;
-        document.getElementById('prediction').textContent = `Next crash may be near: ${avg.toFixed(2)}x`;
+        const avg = crashData.reduce((a, b) => a + b, 0) / 10;
+        const trend = crashData[9] > crashData[0] ? 'rising' : 'falling';
+
+        let prediction = '';
+        if (avg < 2 && trend === 'falling') {
+          prediction = 'Likely a low crash (under 2x)';
+        } else if (avg > 3 && trend === 'rising') {
+          prediction = 'Chance of higher crash (3x+)';
+        } else {
+          prediction = 'Could go either way. Play cautiously.';
+        }
+
+        document.getElementById('prediction').textContent = `${prediction} (Avg: ${avg.toFixed(2)}, Trend: ${trend})`;
       } else {
         document.getElementById('prediction').textContent = `Waiting for 10 values... (${crashData.length}/10)`;
       }
