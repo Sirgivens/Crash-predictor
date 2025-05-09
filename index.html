@@ -1,76 +1,48 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Crash Predictor</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px;
-    }
-    .card {
-      background: #222;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
-      width: 100%;
-      max-width: 500px;
-    }
-    textarea, input, button {
-      width: 100%;
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 6px;
-      border: none;
-      font-size: 16px;
-    }
-    button {
-      background: #4CAF50;
-      color: white;
-      cursor: pointer;
-    }
-    .result {
-      margin-top: 15px;
-      font-size: 18px;
-      color: #0f0;
-    }
+    body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+    input, button { padding: 8px; margin: 5px; }
+    #history { margin-top: 15px; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Crash Game Predictor</h2>
-    <label for="history">Enter Last 10 Crash Multipliers (comma-separated):</label>
-    <input type="text" id="history" placeholder="e.g., 1.01,1.24,1.55,2.50,..." />
-    <button onclick="predictNextRound()">Predict Next Round</button>
-    <div class="result" id="prediction"></div>
-  </div>  <script>
-    function predictNextRound() {
-      const input = document.getElementById('history').value;
-      const numbers = input.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
-      
-      if (numbers.length < 5) {
-        document.getElementById('prediction').innerText = 'Please enter at least 5 multipliers.';
-        return;
-      }
+  <h2>Crash Predictor</h2>
+  <input type="number" id="newCrash" step="0.01" placeholder="Enter latest crash multiplier">
+  <button onclick="addCrash()">Add</button>
 
-      const lowCrashes = numbers.filter(x => x <= 2.0).length;
-      const highCrashes = numbers.filter(x => x >= 5.0).length;
+  <div id="history"></div>
+  <h3>Prediction:</h3>
+  <p id="prediction">Waiting for data...</p>
 
-      let message = '';
-      if (lowCrashes >= 4 && numbers[numbers.length - 1] < 2.0) {
-        message = 'Prediction: High multiplier (>5x) likely next! Consider betting.';
-      } else if (highCrashes >= 2) {
-        message = 'Prediction: A few low multipliers might follow. Consider waiting.';
+  <script>
+    let crashData = JSON.parse(localStorage.getItem('crashData')) || [];
+
+    function updateUI() {
+      document.getElementById('history').innerHTML = `<strong>Last 10:</strong> ${crashData.join(', ')}`;
+      if (crashData.length === 10) {
+        let avg = crashData.reduce((a, b) => a + b, 0) / 10;
+        document.getElementById('prediction').textContent = `Next crash may be near: ${avg.toFixed(2)}x`;
       } else {
-        message = 'Prediction: Mid-range (2x–4x) multiplier likely. Bet cautiously.';
+        document.getElementById('prediction').textContent = `Waiting for 10 values... (${crashData.length}/10)`;
       }
-
-      document.getElementById('prediction').innerText = message;
     }
-  </script></body>
+
+    function addCrash() {
+      const input = document.getElementById('newCrash');
+      const val = parseFloat(input.value);
+      if (!isNaN(val)) {
+        crashData.push(val);
+        if (crashData.length > 10) crashData.shift(); // keep only last 10
+        localStorage.setItem('crashData', JSON.stringify(crashData));
+        input.value = '';
+        updateUI();
+      }
+    }
+
+    updateUI();
+  </script>
+</body>
 </html>
