@@ -12,6 +12,7 @@
   <h2>Crash Predictor</h2>
   <input type="number" id="newCrash" step="0.01" placeholder="Enter latest crash multiplier">
   <button onclick="addCrash()">Add</button>
+  <button onclick="resetData()">Reset</button>
 
   <div id="history"></div>
   <h3>Prediction:</h3>
@@ -47,11 +48,17 @@
       const val = parseFloat(input.value);
       if (!isNaN(val)) {
         crashData.push(val);
-        if (crashData.length > 10) crashData.shift(); // keep only last 10
+        if (crashData.length > 10) crashData.shift();
         localStorage.setItem('crashData', JSON.stringify(crashData));
         input.value = '';
         updateUI();
       }
+    }
+
+    function resetData() {
+      crashData = [];
+      localStorage.removeItem('crashData');
+      updateUI();
     }
 
     updateUI();
