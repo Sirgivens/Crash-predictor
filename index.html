@@ -1,81 +1,109 @@
-<!DOCTYPE html>
-<html>
+      <!DOCTYPE html><html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Crash Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial; padding: 20px; background: #f9f9f9; color: #333; }
-    input, button { padding: 8px; margin: 5px; }
-    .stat { margin: 10px 0; font-weight: bold; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px;
+      font-size: 1rem;
+    }
+    .stable { color: green; }
+    .moderate { color: orange; }
+    .high { color: red; }
   </style>
 </head>
 <body>
   <h2>Crash Analyzer</h2>
-  <input type="number" id="newCrash" step="0.01" placeholder="Enter latest crash multiplier">
+  <input type="number" step="0.01" id="crashInput" placeholder="Enter latest crash multiplier">
   <button onclick="addCrash()">Add</button>
-  <button onclick="resetData()">Reset</button>
+  <button onclick="resetCrashes()">Reset</button>  <p id="crashList"></p>
+  <p id="stats"></p>
+  <canvas id="crashChart" width="400" height="150"></canvas>  <script>
+    let crashes = [];
 
-  <div id="history"></div>
-  <div id="stats"></div>
-  <div id="advice"></div>
+    function updateDisplay() {
+      const crashList = document.getElementById("crashList");
+      const stats = document.getElementById("stats");
+      const chart = document.getElementById("crashChart").getContext('2d');
+      crashList.innerHTML = `<strong>Last ${crashes.length} crashes:</strong> ${crashes.join(', ')}`;
 
-  <script>
-    let crashData = JSON.parse(localStorage.getItem('crashData')) || [];
-
-    function addCrash() {
-      const input = document.getElementById('newCrash');
-      const val = parseFloat(input.value);
-      if (!isNaN(val)) {
-        crashData.push(val);
-        if (crashData.length > 10) crashData.shift();
-        localStorage.setItem('crashData', JSON.stringify(crashData));
-        input.value = '';
-        updateUI();
-      }
-    }
-
-    function resetData() {
-      crashData = [];
-      localStorage.removeItem('crashData');
-      updateUI();
-    }
-
-    function updateUI() {
-      const historyEl = document.getElementById('history');
-      const statsEl = document.getElementById('stats');
-      const adviceEl = document.getElementById('advice');
-
-      if (crashData.length === 0) {
-        historyEl.innerHTML = "No data yet.";
-        statsEl.innerHTML = "";
-        adviceEl.innerHTML = "";
+      if (crashes.length === 0) {
+        stats.innerHTML = '';
         return;
       }
 
-      historyEl.innerHTML = `<strong>Last ${crashData.length} crashes:</strong> ${crashData.join(', ')}`;
-
-      const min = Math.min(...crashData);
-      const max = Math.max(...crashData);
-      const avg = crashData.reduce((a, b) => a + b, 0) / crashData.length;
-      const risky = crashData.filter(n => n < 2).length;
-
-      statsEl.innerHTML = `
-        <div class="stat">Average: ${avg.toFixed(2)}</div>
-        <div class="stat">Lowest: ${min.toFixed(2)}</div>
-        <div class="stat">Highest: ${max.toFixed(2)}</div>
-        <div class="stat">Crashes under 2x: ${risky} of ${crashData.length}</div>
-      `;
+      const average = (crashes.reduce((a, b) => a + b, 0) / crashes.length).toFixed(2);
+      const min = Math.min(...crashes);
+      const max = Math.max(...crashes);
+      const under2 = crashes.filter(c => c < 2).length;
 
       let riskLevel = 'Stable';
-      if (risky >= 7) {
-        riskLevel = 'High Risk — many early crashes';
-      } else if (risky >= 4) {
-        riskLevel = 'Mixed Risk — be cautious';
+      let riskClass = 'stable';
+      if (under2 / crashes.length > 0.5) {
+        riskLevel = 'High Risk';
+        riskClass = 'high';
+      } else if (under2 / crashes.length > 0.25) {
+        riskLevel = 'Moderate Risk';
+        riskClass = 'moderate';
       }
 
-      adviceEl.innerHTML = `<div class="stat">Risk Level: ${riskLevel}</div>`;
+      stats.innerHTML = `
+        Average: ${average}<br>
+        Lowest: ${min}<br>
+        Highest: ${max}<br>
+        Crashes under 2x: ${under2} of ${crashes.length}<br>
+        <span class="${riskClass}">Risk Level: ${riskLevel}</span>
+      `;
+
+      if (window.crashChart) {
+        window.crashChart.destroy();
+      }
+
+      window.crashChart = new Chart(chart, {
+        type: 'line',
+        data: {
+          labels: crashes.map((_, i) => i + 1),
+          datasets: [{
+            label: 'Crash Multiplier',
+            data: crashes,
+            borderColor: 'blue',
+            backgroundColor: 'rgba(0, 0, 255, 0.1)',
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
     }
 
-    updateUI();
-  </script>
-</body>
-</html>
+    function addCrash() {
+      const input = document.getElementById("crashInput");
+      const value = parseFloat(input.value);
+      if (!isNaN(value)) {
+        crashes.push(value);
+        if (crashes.length > 10) crashes.shift();
+        updateDisplay();
+      }
+      input.value = '';
+    }
+
+    function resetCrashes() {
+      crashes = [];
+      updateDisplay();
+    }
+  </script></body>
+      </html>
