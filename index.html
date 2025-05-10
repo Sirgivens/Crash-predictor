@@ -1,109 +1,52 @@
-      <!DOCTYPE html><html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crash Analyzer</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aviator Crash Predictor</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f9f9f9;
-    }
-    input, button {
-      padding: 8px;
-      margin: 5px;
-      font-size: 1rem;
-    }
-    .stable { color: green; }
-    .moderate { color: orange; }
-    .high { color: red; }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f7f7f7; }
+    h1 { color: #c0392b; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; }
+    .result { margin-top: 20px; padding: 10px; background: #fff; border-radius: 5px; }
   </style>
 </head>
 <body>
-  <h2>Crash Analyzer</h2>
-  <input type="number" step="0.01" id="crashInput" placeholder="Enter latest crash multiplier">
-  <button onclick="addCrash()">Add</button>
-  <button onclick="resetCrashes()">Reset</button>  <p id="crashList"></p>
-  <p id="stats"></p>
-  <canvas id="crashChart" width="400" height="150"></canvas>  <script>
-    let crashes = [];
+  <h1>Aviator Crash Strategy Predictor</h1>
+  <p>Enter the last 10 crash multipliers (comma-separated):</p>
+  <input type="text" id="inputData" placeholder="e.g. 1.2, 1.9, 2.5, 1.4, ..." />
+  <button onclick="predictStrategy()">Analyze</button>
+  <div class="result" id="output"></div>  <script>
+    function predictStrategy() {
+      const input = document.getElementById('inputData').value;
+      const multipliers = input.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
 
-    function updateDisplay() {
-      const crashList = document.getElementById("crashList");
-      const stats = document.getElementById("stats");
-      const chart = document.getElementById("crashChart").getContext('2d');
-      crashList.innerHTML = `<strong>Last ${crashes.length} crashes:</strong> ${crashes.join(', ')}`;
-
-      if (crashes.length === 0) {
-        stats.innerHTML = '';
+      if (multipliers.length < 5) {
+        document.getElementById('output').innerHTML = 'Please enter at least 5 valid multipliers.';
         return;
       }
 
-      const average = (crashes.reduce((a, b) => a + b, 0) / crashes.length).toFixed(2);
-      const min = Math.min(...crashes);
-      const max = Math.max(...crashes);
-      const under2 = crashes.filter(c => c < 2).length;
+      const avg = (multipliers.reduce((a, b) => a + b, 0) / multipliers.length).toFixed(2);
+      const recent = multipliers.slice(-3);
+      const under2x = recent.every(x => x < 2);
+      const lastHigh = multipliers[multipliers.length - 1] > 10;
 
-      let riskLevel = 'Stable';
-      let riskClass = 'stable';
-      if (under2 / crashes.length > 0.5) {
-        riskLevel = 'High Risk';
-        riskClass = 'high';
-      } else if (under2 / crashes.length > 0.25) {
-        riskLevel = 'Moderate Risk';
-        riskClass = 'moderate';
+      let risk = '', suggestion = '';
+      if (under2x) {
+        risk = 'High';
+        suggestion = 'Wait 1–2 rounds before betting.';
+      } else if (avg > 2.5) {
+        risk = 'Low';
+        suggestion = 'Safe to bet. Cash out early (~1.8x).';
+      } else if (lastHigh) {
+        risk = 'High';
+        suggestion = 'High spike detected. Expect low rounds. Skip next 2.';
+      } else {
+        risk = 'Moderate';
+        suggestion = 'Bet with caution. Consider cashing out at 1.5x–2x.';
       }
 
-      stats.innerHTML = `
-        Average: ${average}<br>
-        Lowest: ${min}<br>
-        Highest: ${max}<br>
-        Crashes under 2x: ${under2} of ${crashes.length}<br>
-        <span class="${riskClass}">Risk Level: ${riskLevel}</span>
-      `;
-
-      if (window.crashChart) {
-        window.crashChart.destroy();
-      }
-
-      window.crashChart = new Chart(chart, {
-        type: 'line',
-        data: {
-          labels: crashes.map((_, i) => i + 1),
-          datasets: [{
-            label: 'Crash Multiplier',
-            data: crashes,
-            borderColor: 'blue',
-            backgroundColor: 'rgba(0, 0, 255, 0.1)',
-            fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-    }
-
-    function addCrash() {
-      const input = document.getElementById("crashInput");
-      const value = parseFloat(input.value);
-      if (!isNaN(value)) {
-        crashes.push(value);
-        if (crashes.length > 10) crashes.shift();
-        updateDisplay();
-      }
-      input.value = '';
-    }
-
-    function resetCrashes() {
-      crashes = [];
-      updateDisplay();
+      document.getElementById('output').innerHTML =
+        `<strong>Avg:</strong> ${avg}<br><strong>Risk:</strong> ${risk}<br><strong>Strategy:</strong> ${suggestion}`;
     }
   </script></body>
-      </html>
+</html>
