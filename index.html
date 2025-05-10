@@ -12,16 +12,39 @@
 </head>
 <body>
   <h1>Aviator Crash Strategy Predictor</h1>
-  <p>Enter the last 10 crash multipliers (comma-separated):</p>
-  <input type="text" id="inputData" placeholder="e.g. 1.2, 1.9, 2.5, 1.4, ..." />
-  <button onclick="predictStrategy()">Analyze</button>
-  <div class="result" id="output"></div>  <script>
-    function predictStrategy() {
-      const input = document.getElementById('inputData').value;
-      const multipliers = input.split(',').map(x => parseFloat(x.trim())).filter(x => !isNaN(x));
+  <p>Enter the latest crash multiplier (just one):</p>
+  <input type="number" step="0.01" id="inputSingle" placeholder="e.g. 1.8" />
+  <button onclick="addMultiplier()">Add Multiplier</button>
+  <button onclick="resetMultipliers()">Reset</button>  <div class="result" id="output"></div>
+  <p><strong>Last 10 Multipliers:</strong> <span id="multiplierList"></span></p>  <script>
+    let multipliers = [];
 
+    function addMultiplier() {
+      const input = parseFloat(document.getElementById('inputSingle').value);
+      if (!isNaN(input)) {
+        multipliers.push(input);
+        if (multipliers.length > 10) multipliers.shift();
+        updateUI();
+        predictStrategy();
+        document.getElementById('inputSingle').value = '';
+      } else {
+        alert('Please enter a valid number.');
+      }
+    }
+
+    function resetMultipliers() {
+      multipliers = [];
+      updateUI();
+      document.getElementById('output').innerHTML = '';
+    }
+
+    function updateUI() {
+      document.getElementById('multiplierList').textContent = multipliers.join(', ');
+    }
+
+    function predictStrategy() {
       if (multipliers.length < 5) {
-        document.getElementById('output').innerHTML = 'Please enter at least 5 valid multipliers.';
+        document.getElementById('output').innerHTML = 'Please enter at least 5 multipliers.';
         return;
       }
 
